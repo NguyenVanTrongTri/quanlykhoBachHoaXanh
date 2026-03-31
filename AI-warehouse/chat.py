@@ -131,13 +131,13 @@ if __name__ == "__main__":
             if not query: continue
             if query.lower() in ['exit', 'quit', 'thoát']: break
             
-            cleaned = clean_text(query)
+            cleaned = clean_text(query) # type: ignore
             X = vectorizer.transform([cleaned])
             intent = model.predict(X)[0]
             confidence = max(model.predict_proba(X)[0])
             
             answer = get_answer(intent, query, confidence, DYNAMIC_RESPONSES)
             print(f"LORA AI: {answer}\n")
-            log_to_results(query, intent, confidence, answer, DYNAMIC_RESPONSES)
+            log_to_results(query, intent, confidence, answer, DYNAMIC_RESPONSES) # pyright: ignore[reportUndefinedVariable]
         except KeyboardInterrupt:
             break
