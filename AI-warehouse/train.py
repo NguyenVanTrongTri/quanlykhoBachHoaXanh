@@ -29,19 +29,14 @@ def clean_text(text):
     return " ".join(text.split())
 
 # Cấu hình đường dẫn
-# --- FIX LỖI ĐƯỜNG DẪN TÀI LIỆU ---
-base_dir = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(base_dir, 'model')
+if not os.path.exists('model'): os.makedirs('model')
+if not os.path.exists('data_history'): os.makedirs('data_history')
 
-# Tạo folder model một cách chính xác
-if not os.path.exists(MODEL_DIR):
-    os.makedirs(MODEL_DIR, exist_ok=True)
-    print(f"📁 Đã tạo thư mục model tại: {MODEL_DIR}")
-
-# Cập nhật lại đường dẫn các file lưu trữ
-WAREHOUSE_MODEL_PATH = os.path.join(MODEL_DIR, "warehouse_model.pkl")
-VECTORIZER_PATH = os.path.join(MODEL_DIR, "vectorizer.pkl")
-INTENT_MAP_PATH = os.path.join(MODEL_DIR, "intent_map.json")
+BIN_HISTORY_PATH = "data_history/full_dataset.bin"
+JSON_HISTORY_PATH = "data_history/full_dataset.json" 
+DB_SNAPSHOT_PATH = "data_history/database_snapshot.bin"
+INTENT_MAP_PATH = "model/intent_map.json"
+NEW_DATASET_PATH = "dataset/dataset.json"
 
 # ======================
 # 2. NHÁNH DỰ BÁO (LEVEL 3)
