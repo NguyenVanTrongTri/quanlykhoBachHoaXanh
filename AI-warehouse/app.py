@@ -14,23 +14,33 @@ CORS(app)
 
 predictor = LoraPredictor()
 
-# --- ROUTE 1: DỰ BÁO HÀNG HÓA (ĐÃ NÂNG CẤP CHỌN NGÀY) ---
+# --- NÂNG CẤP: ĐỊNH NGHĨA ĐƯỜNG DẪN TUYỆT ĐỐI ---
+# Lấy đường dẫn của chính file app.py hiện tại
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Ghép với folder data_history để ra đường dẫn chuẩn
+SNAPSHOT_PATH = os.path.join(BASE_DIR, "data_history", "database_snapshot.bin")
+
+# --- ROUTE 1: DỰ BÁO HÀNG HÓA ---
 @app.route('/api/forecast', methods=['GET'])
 def get_forecast():
     try:
-        # NÂNG CẤP: Lấy số ngày từ query string (ví dụ: /api/forecast?days=3)
-        # Mặc định là 1 nếu không truyền gì lên
         days_param = request.args.get('days', default=1, type=int)
 
+        # Chạy read_data để cập nhật dữ liệu từ DB Cloud
         read_data() 
 
-        db_snapshot = joblib.load("data_history/database_snapshot.bin")
+        # Kiểm tra file tồn tại trước khi load
+        if not os.path.exists(SNAPSHOT_PATH):
+            return jsonify({
+                "status": "error", 
+                "message": f"Không tìm thấy file snapshot tại: {SNAPSHOT_PATH}. Vui lòng chạy Sync trước."
+            }), 404
+
+        db_snapshot = joblib.load(SNAPSHOT_PATH)
         if "tables" not in db_snapshot or "hanghoa" not in db_snapshot["tables"]:
-            return jsonify({"status": "error", "message": "Không tìm thấy dữ liệu hàng hóa."}), 404
+            return jsonify({"status": "error", "message": "Dữ liệu hàng hóa bị trống."}), 404
             
         df_hanghoa = pd.DataFrame(db_snapshot["tables"]["hanghoa"])
-        
-        # TRUYỀN THAM SỐ days_param VÀO ĐÂY
         data, error = predictor.get_forecast_data(df_hanghoa, days_ahead=days_param)
         
         if error:
@@ -39,7 +49,7 @@ def get_forecast():
         return jsonify({
             "status": "success",
             "date": data['date'],
-            "forecast_days": days_param, # Trả về số ngày đã dự báo để Frontend kiểm tra
+            "forecast_days": days_param,
             "accuracy": data['accuracy'],
             "items": data['items']
         })
@@ -73,14 +83,15 @@ def chat_with_lora():
     except Exception as e:
         return jsonify({"status": "error", "message": f"Lỗi Chat: {str(e)}"}), 500
 
-# --- ROUTE 3: ĐỒNG BỘ THỦ CÔNG ---
-@app.route('/api/sync', methods=['POST'])
+# --- ROUTE 3: ĐỒNG BỘ THỦ CÔNG (Cho phép GET để test nhanh) ---
+@app.route('/api/sync', methods=['GET', 'POST'])
 def manual_sync():
     if read_data():
         return jsonify({"status": "success", "message": "Đã đồng bộ dữ liệu thành công!"})
-    return jsonify({"status": "error", "message": "Đồng bộ thất bại."}), 500
+    return jsonify({"status": "error", "message": "Đồng bộ thất bại. Kiểm tra kết nối DB Cloud."}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+    # Tạo snapshot lần đầu khi khởi chạy
     read_data()
     app.run(host='0.0.0.0', port=port)
