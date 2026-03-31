@@ -110,19 +110,11 @@ def train_forecast_branch():
         # Dùng errors='coerce' để biến các giá trị lỗi thành NaN, sau đó fill bằng 0
         y = pd.to_numeric(df[qty_col], errors='coerce').fillna(0).astype(float)
 
-        # 4.1. TẠO TRỌNG SỐ ƯU TIÊN DỮ LIỆU MỚI
-        # Giả sử database cũ có 15000 dòng, database mới nạp thêm vào sau
-        # Chúng ta lấy 10% số dòng cuối cùng để coi là "Dữ liệu mới nhất"
-        num_rows = len(df)
-        weights = [1.0] * num_rows # Mặc định trọng số là 1
-        priority_count = min(500, int(num_rows * 0.1)) 
-        for i in range(num_rows - priority_count, num_rows):
-            weights[i] = 10.0 # Gấp 10 lần tầm quan trọng
         # 5. Huấn luyện model (Sử dụng 100% dữ liệu để đạt độ phủ cao nhất)
         model_xgb = xgb.XGBRegressor(
         n_estimators=1000,        # Xây dựng 500 cây quyết định để khớp dữ liệu phức tạp
-        learning_rate=0.03,      # Tốc độ học vừa phải, giúp model hội tụ mịn hơn
-        max_depth=7,           # Soi cực sâu vào đặc tính riêng của từng mã hàng (Cá hồi vs Thịt bò)
+        learning_rate=0.05,      # Tốc độ học vừa phải, giúp model hội tụ mịn hơn
+        max_depth=10,           # Soi cực sâu vào đặc tính riêng của từng mã hàng (Cá hồi vs Thịt bò)
         subsample=0.8,          # Mỗi cây chỉ lấy 80% dữ liệu ngẫu nhiên (chống học vẹt)
         colsample_bytree=0.8,   # Mỗi cây chỉ lấy 80% tính năng (giúp model khách quan hơn)
         objective='reg:squarederror',
