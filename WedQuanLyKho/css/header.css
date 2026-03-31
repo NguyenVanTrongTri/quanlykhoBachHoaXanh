@@ -1,0 +1,36 @@
+/* PHẦN THANH NGANG - HEADER */
+.header {
+    width: 100%;
+    height: 40px;
+    background: #008947;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    box-sizing: border-box;
+}
+
+/* Logo */
+.header img {
+    height: 40px;
+}
+
+/* Icon bên phải */
+.header-icons {
+    display: flex;
+    gap: 25px;
+    font-size: 26px;
+    color: white;
+    cursor: pointer;
+}
+/* Icon bên trái */
+.header-icons img.icon-bell {
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    object-fit: contain;
+}
+.header-icons img.icon-bell:hover {
+    transform: scale(1.1);
+    transition: 0.2s;
+}
