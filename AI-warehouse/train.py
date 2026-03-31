@@ -29,14 +29,23 @@ def clean_text(text):
     return " ".join(text.split())
 
 # Cấu hình đường dẫn
-if not os.path.exists('model'): os.makedirs('model')
-if not os.path.exists('data_history'): os.makedirs('data_history')
+# --- FIX LỖI ĐƯỜNG DẪN TÀI LIỆU ---
+base_dir = os.path.dirname(os.path.abspath(__file__)) # Thư mục chứa file train.py
 
-BIN_HISTORY_PATH = "data_history/full_dataset.bin"
-JSON_HISTORY_PATH = "data_history/full_dataset.json" 
-DB_SNAPSHOT_PATH = "data_history/database_snapshot.bin"
-INTENT_MAP_PATH = "model/intent_map.json"
-NEW_DATASET_PATH = "dataset/dataset.json"
+# Cấu hình đường dẫn tuyệt đối
+MODEL_DIR = os.path.join(base_dir, 'model')
+DATA_HISTORY_DIR = os.path.join(base_dir, 'data_history')
+DATASET_DIR = os.path.join(base_dir, 'dataset')
+
+if not os.path.exists(MODEL_DIR): os.makedirs(MODEL_DIR)
+if not os.path.exists(DATA_HISTORY_DIR): os.makedirs(DATA_HISTORY_DIR)
+
+# Trỏ file chính xác
+BIN_HISTORY_PATH = os.path.join(DATA_HISTORY_DIR, "full_dataset.bin")
+JSON_HISTORY_PATH = os.path.join(DATA_HISTORY_DIR, "full_dataset.json") 
+DB_SNAPSHOT_PATH = os.path.join(DATA_HISTORY_DIR, "database_snapshot.bin")
+INTENT_MAP_PATH = os.path.join(MODEL_DIR, "intent_map.json")
+NEW_DATASET_PATH = os.path.join(DATASET_DIR, "dataset.json")
 
 # ======================
 # 2. NHÁNH DỰ BÁO (LEVEL 3)
