@@ -91,7 +91,10 @@ def manual_sync():
     return jsonify({"status": "error", "message": "Đồng bộ thất bại. Kiểm tra kết nối DB Cloud."}), 500
 
 if __name__ == "__main__":
+    # 1. Lấy port từ Render
     port = int(os.environ.get("PORT", 10000))
-    # Tạo snapshot lần đầu khi khởi chạy
-    read_data()
+    
+    # 2. KHÔNG gọi read_data() ở đây. 
+    # Để app.run lên đầu tiên để Render thấy cổng 10000 mở ngay lập tức.
+    print("Lora AI đang khởi tạo cổng...")
     app.run(host='0.0.0.0', port=port)
