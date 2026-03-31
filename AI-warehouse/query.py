@@ -97,49 +97,58 @@ def enrich_features_for_ai(df, label_encoder_path='data_history/le_hanghoa.bin')
 # ======================================================
 
 def update_logic_snapshot(new_queries=None):
-    target_dir = 'data_history'
-    if not os.path.exists(target_dir): 
-        os.makedirs(target_dir)
-    
-    target_file = os.path.join(target_dir, "database_snapshot.bin")
+    try:
+        # --- NÂNG CẤP QUAN TRỌNG: LẤY ĐƯỜNG DẪN TUYỆT ĐỐI ---
+        # Lấy thư mục chứa chính file query.py này
+        current_script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Luôn trỏ vào folder data_history nằm CÙNG CẤP với file script
+        target_dir = os.path.join(current_script_dir, 'data_history')
+        target_file = os.path.join(target_dir, "database_snapshot.bin")
 
-    # 1. Đọc dữ liệu hiện có nếu file đã tồn tại
-    if os.path.exists(target_file):
-        try:
-            db_snapshot = joblib.load(target_file)
-            print(f"🔄 Đã tìm thấy snapshot cũ. Đang tiến hành hợp nhất dữ liệu...")
-        except:
-            print("⚠️ File cũ bị lỗi hoặc không đọc được. Khởi tạo mới hoàn toàn.")
-            db_snapshot = {"query_logic": {}, "ai_metadata": {}, "inventory_config": {}}
-    else:
-        # Nếu chưa có file thì tạo cấu trúc mặc định
+        # In ra để ông kiểm tra (Debug)
+        print(f">>> [DEBUG]: Thư mục mục tiêu: {target_dir}")
+
+        # 1. Khởi tạo cấu trúc mặc định
         db_snapshot = {
             "query_logic": {},
             "ai_metadata": {
                 "features": ["MaHangHoa_ID", "Thu", "Thang", "Is_Weekend", "SL_HomQua", "SL_TuanTruoc", "TB_3Ngay"],
                 "target": "TongSL",
                 "model_type": "XGBoost_Regressor_v1"
-            },
-            "inventory_config": {
-                "service_level": 0.95,
-                "lead_time_default": 3
             }
         }
 
-    # 2. Cập nhật các câu lệnh SQL mới vào (Hợp nhất dictionary)
-    if new_queries:
-        # Lệnh .update() sẽ thêm key mới, nếu trùng key cũ thì sẽ cập nhật nội dung mới
-        db_snapshot["query_logic"].update(new_queries)
-        print(f"➕ Đã nạp thêm {len(new_queries)} kịch bản truy vấn.")
+        # 2. Kiểm tra và Load file cũ nếu có (Dùng đường dẫn tuyệt đối)
+        if os.path.exists(target_file):
+            try:
+                loaded_data = joblib.load(target_file)
+                if isinstance(loaded_data, dict):
+                    db_snapshot.update(loaded_data)
+                    print(f"🔄 Đã tìm thấy snapshot tại đúng vị trí. Đang hợp nhất...")
+            except Exception as e:
+                print(f"⚠️ Lỗi đọc file cũ: {e}")
+        else:
+            # Nếu chưa có folder thì mới tạo
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir, exist_ok=True)
+                print(f"📁 Khởi tạo thư mục mới: {target_dir}")
 
-    # 3. Lưu lại file bin đã được cập nhật
-    joblib.dump(db_snapshot, target_file)
-    
-    print("=" * 60)
-    print(f"✅ LORA AI: Tổng cộng đang có {len(db_snapshot['query_logic'])} lệnh trong bộ nhớ.")
-    print(f"📂 Snapshot lưu tại: {target_file}")
-    print("=" * 60)
+        # 3. Cập nhật query mới
+        if new_queries:
+            db_snapshot["query_logic"].update(new_queries)
+            print(f"➕ Đã nạp thêm {len(new_queries)} kịch bản truy vấn.")
 
+        # 4. Lưu lại
+        joblib.dump(db_snapshot, target_file, compress=3)
+        
+        print("=" * 60)
+        print(f"✅ LORA AI: Tổng cộng có {len(db_snapshot['query_logic'])} lệnh.")
+        print(f"📂 Snapshot CHÍNH XÁC tại: {target_file}")
+        print("=" * 60)
+
+    except Exception as e:
+        print(f"❌ Lỗi: {e}")
 if __name__ == "__main__":
     # Chạy lần đầu với danh sách mặc định
     update_logic_snapshot(new_queries=LIST_QUERIES)
