@@ -9,3 +9,4 @@ duckdb
 tabulate
 scikit-learn
 joblib
+gunicorn==23.0.0
