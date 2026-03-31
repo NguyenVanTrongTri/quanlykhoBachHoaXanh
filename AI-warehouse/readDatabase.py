@@ -23,7 +23,11 @@ def read_data():
                 _CACHED_SNAPSHOT = {"tables": {}, "schema": {}, "query_logic": {}}
 
         conn = mysql.connector.connect(
-            host="localhost", user="root", password="", database="trainai"
+        host="db-bach-hoa-xanh-trongtri14780-2a54.j.aivencloud.com",
+        port="16063",
+        user="avnadmin",
+        password="AVNS_0jfSoEV9FoIcW9MljSE",
+        database="db_quanlykho"
         )
         cursor = conn.cursor(dictionary=True, buffered=True)
 
