@@ -46,20 +46,24 @@ def get_forecast():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # --- ROUTE 2: CHATBOT AI ---
-@app.route('/api/chat', methods=['POST'])
-def chat_with_lora():
-    try:
-        user_data = request.json
-        user_query = user_data.get("message", "")
-        if not user_query:
-            return jsonify({"response": "Leader chưa nhập tin nhắn nè!"})
+# Sửa dòng này để nhận cả GET và POST
+@app.route('/api/chat', methods=['GET', 'POST'])
+def chat():
+    from flask import request, jsonify
+    
+    # Lấy tin nhắn dù là gửi qua URL (GET) hay gửi qua Body (POST)
+    if request.method == 'GET':
+        user_text = request.args.get('text')
+    else:
+        data = request.get_json(silent=True)
+        user_text = data.get('text') if data else None
 
-        # Hàm get_answer sẽ tự động gọi load_resources() nếu chưa nạp
-        ai_response = get_answer(None, user_query, 1.0, None) 
+    if not user_text:
+        return jsonify({"response": "Leader chưa nhập tin nhắn nè!"}), 400
 
-        return jsonify({"status": "success", "response": ai_response})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    # Chỗ này là logic AI của Trí (gọi model dự đoán intent)
+    # Ví dụ tạm thời:
+    return jsonify({"intent": "greeting", "response": "Chào Trí! Lora AI đã nhận được tin nhắn."})
 
 # --- ROUTE 3: SYNC DỮ LIỆU (Nút kích hoạt) ---
 @app.route('/api/sync', methods=['GET', 'POST'])
