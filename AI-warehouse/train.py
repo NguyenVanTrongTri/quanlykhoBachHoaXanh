@@ -30,22 +30,18 @@ def clean_text(text):
 
 # Cấu hình đường dẫn
 # --- FIX LỖI ĐƯỜNG DẪN TÀI LIỆU ---
-base_dir = os.path.dirname(os.path.abspath(__file__)) # Thư mục chứa file train.py
-
-# Cấu hình đường dẫn tuyệt đối
+base_dir = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(base_dir, 'model')
-DATA_HISTORY_DIR = os.path.join(base_dir, 'data_history')
-DATASET_DIR = os.path.join(base_dir, 'dataset')
 
-if not os.path.exists(MODEL_DIR): os.makedirs(MODEL_DIR)
-if not os.path.exists(DATA_HISTORY_DIR): os.makedirs(DATA_HISTORY_DIR)
+# Tạo folder model một cách chính xác
+if not os.path.exists(MODEL_DIR):
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    print(f"📁 Đã tạo thư mục model tại: {MODEL_DIR}")
 
-# Trỏ file chính xác
-BIN_HISTORY_PATH = os.path.join(DATA_HISTORY_DIR, "full_dataset.bin")
-JSON_HISTORY_PATH = os.path.join(DATA_HISTORY_DIR, "full_dataset.json") 
-DB_SNAPSHOT_PATH = os.path.join(DATA_HISTORY_DIR, "database_snapshot.bin")
+# Cập nhật lại đường dẫn các file lưu trữ
+WAREHOUSE_MODEL_PATH = os.path.join(MODEL_DIR, "warehouse_model.pkl")
+VECTORIZER_PATH = os.path.join(MODEL_DIR, "vectorizer.pkl")
 INTENT_MAP_PATH = os.path.join(MODEL_DIR, "intent_map.json")
-NEW_DATASET_PATH = os.path.join(DATASET_DIR, "dataset.json")
 
 # ======================
 # 2. NHÁNH DỰ BÁO (LEVEL 3)
