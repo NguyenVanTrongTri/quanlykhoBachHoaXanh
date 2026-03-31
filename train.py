@@ -29,46 +29,14 @@ def clean_text(text):
     return " ".join(text.split())
 
 # Cấu hình đường dẫn
-# ======================================================
-# 1. CẤU HÌNH ĐƯỜNG DẪN TUYỆT ĐỐI (DÙNG CHO MỌI FILE)
-# ======================================================
-# Lấy thư mục gốc chứa chính file script đang chạy
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if not os.path.exists('model'): os.makedirs('model')
+if not os.path.exists('data_history'): os.makedirs('data_history')
 
-# Định nghĩa các thư mục chức năng
-DIRS = {
-    "model": os.path.join(BASE_DIR, "model"),
-    "data_history": os.path.join(BASE_DIR, "data_history"),
-    "dataset": os.path.join(BASE_DIR, "dataset"),
-}
-
-# Tự động kiểm tra và tạo thư mục nếu chưa có
-for folder in DIRS.values():
-    if not os.path.exists(folder):
-        os.makedirs(folder, exist_ok=True)
-        print(f"📁 Đã khởi tạo thư mục: {folder}")
-
-# ======================================================
-# 2. ĐỊNH NGHĨA FILE PATH (Dùng biến toàn cục)
-# ======================================================
-PATHS = {
-    "bin_history": os.path.join(DIRS["data_history"], "full_dataset.bin"),
-    "json_history": os.path.join(DIRS["data_history"], "full_dataset.json"),
-    "db_snapshot": os.path.join(DIRS["data_history"], "database_snapshot.bin"),
-    "intent_map": os.path.join(DIRS["model"], "intent_map.json"),
-    "new_dataset": os.path.join(DIRS["dataset"], "dataset.json"),
-    "label_encoder": os.path.join(DIRS["model"], "label_encoder.pkl"),
-    "warehouse_model": os.path.join(DIRS["model"], "warehouse_model.pkl"),
-    "vectorizer": os.path.join(DIRS["model"], "vectorizer.pkl"),
-    "accuracy_info": os.path.join(DIRS["model"], "accuracy_info.json")
-}
-
-# Gán lại vào các biến cũ để ông không phải sửa logic bên dưới nhiều
-BIN_HISTORY_PATH = PATHS["bin_history"]
-JSON_HISTORY_PATH = PATHS["json_history"]
-DB_SNAPSHOT_PATH = PATHS["db_snapshot"]
-INTENT_MAP_PATH = PATHS["intent_map"]
-NEW_DATASET_PATH = PATHS["new_dataset"]
+BIN_HISTORY_PATH = "data_history/full_dataset.bin"
+JSON_HISTORY_PATH = "data_history/full_dataset.json" 
+DB_SNAPSHOT_PATH = "data_history/database_snapshot.bin"
+INTENT_MAP_PATH = "model/intent_map.json"
+NEW_DATASET_PATH = "dataset/dataset.json"
 
 # ======================
 # 2. NHÁNH DỰ BÁO (LEVEL 3)
