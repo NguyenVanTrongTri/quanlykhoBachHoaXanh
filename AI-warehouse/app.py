@@ -1,53 +1,47 @@
 import os
-import joblib
-import gc # Bộ dọn rác để giải phóng RAM
+import gc
 import pandas as pd
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-# Import logic
-from predict import LoraPredictor
-from chat import clean_text, get_answer, DYNAMIC_RESPONSES, model as db_model, vectorizer
+# Import logic (Lazy loading bên trong chat.py giúp import ở đây rất nhẹ)
+from chat import clean_text, get_answer, load_resources, resources_loaded
 from readDatabase import read_data 
 
 app = Flask(__name__)
 CORS(app)
 
-predictor = LoraPredictor()
+# --- CẤU HÌNH ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SNAPSHOT_PATH = os.path.join(BASE_DIR, "data_history", "database_snapshot.bin")
 
-# --- NÂNG CẤP HÀM DỌN RÁC ---
-def clear_memory():
-    """Hàm giúp giải phóng RAM sau khi xử lý dữ liệu nặng"""
-    gc.collect()
+@app.route('/')
+def home():
+    return jsonify({"status": "online", "message": "Lora AI Level 3 - Ready to work!"})
 
-# --- ROUTE 1: DỰ BÁO HÀNG HÓA ---
+# --- ROUTE 1: DỰ BÁO ---
 @app.route('/api/forecast', methods=['GET'])
 def get_forecast():
     try:
+        from predict import LoraPredictor
+        predictor = LoraPredictor()
         days_param = request.args.get('days', default=1, type=int)
 
-        # Kiểm tra file snapshot trước (không tự động read_data ở đây để tránh treo)
         if not os.path.exists(SNAPSHOT_PATH):
-            return jsonify({"status": "error", "message": "Chưa có dữ liệu. Vui lòng gọi /api/sync trước."}), 404
+            return jsonify({"status": "error", "message": "Snapshot chưa tồn tại. Chạy /api/sync trước."}), 404
 
+        import joblib
         db_snapshot = joblib.load(SNAPSHOT_PATH)
         df_hanghoa = pd.DataFrame(db_snapshot["tables"]["hanghoa"])
-        
-        # Xóa snapshot ngay sau khi chuyển thành DataFrame để giải phóng RAM
         del db_snapshot 
         
         data, error = predictor.get_forecast_data(df_hanghoa, days_ahead=days_param)
         
-        # Dọn dẹp DataFrame sau khi dự báo xong
         del df_hanghoa
-        clear_memory()
+        gc.collect() # Giải phóng RAM ngay
 
-        if error:
-            return jsonify({"status": "error", "message": error}), 500
-        
-        return jsonify({"status": "success", "date": data['date'], "items": data['items']})
+        if error: return jsonify({"status": "error", "message": error}), 500
+        return jsonify({"status": "success", "data": data})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -58,35 +52,25 @@ def chat_with_lora():
         user_data = request.json
         user_query = user_data.get("message", "")
         if not user_query:
-            return jsonify({"response": "Bạn chưa nhập tin nhắn!"})
+            return jsonify({"response": "Leader chưa nhập tin nhắn nè!"})
 
-        cleaned = clean_text(user_query)
-        X = vectorizer.transform([cleaned])
-        intent = db_model.predict(X)[0]
-        confidence = max(db_model.predict_proba(X)[0])
-        
-        ai_response = get_answer(intent, user_query, confidence, DYNAMIC_RESPONSES)
+        # Hàm get_answer sẽ tự động gọi load_resources() nếu chưa nạp
+        ai_response = get_answer(None, user_query, 1.0, None) 
 
-        return jsonify({
-            "status": "success",
-            "response": ai_response,
-            "confidence": round(float(confidence), 2)
-        })
+        return jsonify({"status": "success", "response": ai_response})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# --- ROUTE 3: ĐỒNG BỘ THỦ CÔNG ---
+# --- ROUTE 3: SYNC DỮ LIỆU (Nút kích hoạt) ---
 @app.route('/api/sync', methods=['GET', 'POST'])
 def manual_sync():
-    # Gọi read_data() tại đây khi app đã Live ổn định
     if read_data():
-        clear_memory()
-        return jsonify({"status": "success", "message": "Đã đồng bộ và dọn dẹp RAM!"})
-    return jsonify({"status": "error", "message": "Thất bại. Kiểm tra DB Cloud."}), 500
+        load_resources() # Nạp lại tài nguyên vào RAM sau khi sync
+        gc.collect()
+        return jsonify({"status": "success", "message": "Đồng bộ dữ liệu Cloud thành công!"})
+    return jsonify({"status": "error", "message": "Đồng bộ thất bại. Kiểm tra DB Cloud."}), 500
 
-# --- KHỞI CHẠY (QUAN TRỌNG NHẤT) ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    # KHÔNG gọi read_data() ở đây. App phải Live trước đã!
-    print(f"Lora AI khởi động tại cổng: {port}")
+    # KHÔNG gọi nạp dữ liệu ở đây để tránh treo Port khi khởi động
     app.run(host='0.0.0.0', port=port)
