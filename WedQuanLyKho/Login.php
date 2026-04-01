@@ -340,27 +340,38 @@ if (isset($_POST["btnLogin"]))
         const aiText = document.getElementById('ai-text');
         const aiIcon = document.getElementById('ai-icon');
 
-        console.log("Lora AI: Đang gửi tín hiệu đánh thức...");
+        function checkLoraStatus() {
+            console.log("Lora AI: Đang kiểm tra tín hiệu...");
 
-        // Gõ cửa Render
-        fetch("https://lora-ai-9ti1.onrender.com/", { mode: 'cors' })
+            // Gọi vào API dự báo (giống cái ông vừa test thủ công) để check cho chuẩn
+            fetch("https://lora-ai-9ti1.onrender.com/api/forecast?days=1", { 
+                mode: 'cors',
+                headers: { 'Accept': 'application/json' }
+            })
             .then(response => {
-                if (response.ok) {
-                    // KHI ĐÃ THỨC GIẤC
-                    aiToast.style.background = "#00923F"; // Màu xanh Bách Hóa Xanh
+                // Chỉ cần nhận được phản hồi (kể cả lỗi 405 hay 500) 
+                // thì chứng tỏ Server ĐÃ THỨC GIẤC
+                if (response.status !== 502 && response.status !== 503 && response.status !== 504) {
+                    aiToast.style.background = "#00923F"; // Màu xanh chuẩn
                     aiToast.style.color = "#fff";
                     aiText.innerText = "Lora AI đã sẵn sàng!";
-                    aiIcon.className = "fas fa-check-circle"; // Đổi icon sang tích xanh
-                    console.log("Lora AI: Đã thức giấc!");
+                    aiIcon.className = "fas fa-check-circle"; 
+                    console.log("Lora AI: Đã thức giấc và phản hồi!");
                     
-                    // Sau 5 giây tự ẩn đi cho đỡ vướng
-                    setTimeout(() => { aiToast.style.opacity = "0.5"; }, 5000);
+                    setTimeout(() => { aiToast.style.opacity = "0.7"; }, 5000);
+                } else {
+                    // Nếu vẫn là lỗi Gateway (đang khởi động), thử lại sau 3 giây
+                    setTimeout(checkLoraStatus, 3000);
                 }
             })
             .catch(error => {
-                // KHI ĐANG ĐỢI HOẶC LỖI
-                console.log("Lora AI: Đang khởi động...");
+                // Nếu lỗi kết nối hoàn toàn, tiếp tục thử lại
+                console.log("Lora AI: Đang khởi động máy chủ...");
+                setTimeout(checkLoraStatus, 3000);
             });
+        }
+
+        checkLoraStatus();
     });
 </script>
 </body>
