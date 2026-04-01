@@ -279,6 +279,10 @@ if (isset($_POST["btnLogin"]))
                             Chưa có tài khoản? <a href="TaoTaiKhoan.php" style="color: #00923F; font-weight: bold; text-decoration: none;">Đăng ký ngay</a>
                         </p>
                     </form>
+                    <div id="ai-status-toast" style="position: fixed; bottom: 20px; left: 20px; padding: 10px 20px; border-radius: 50px; font-size: 13px; font-weight: bold; z-index: 9999; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.5s ease; background: #f1c40f; color: #000;">
+    <i class="fas fa-spinner fa-spin" id="ai-icon"></i>
+    <span id="ai-text">Đang đánh thức Lora AI...</span>
+</div>
                 </div>
             </div>
         <?php endif; ?>
@@ -331,19 +335,31 @@ if (isset($_POST["btnLogin"]))
     });
 </script>
 <script>
-    // --- CƠ CHẾ ĐÁNH THỨC LORA AI TỰ ĐỘNG ---
     document.addEventListener("DOMContentLoaded", function() {
-        console.log("Lora AI: Đang gửi tín hiệu đánh thức hệ thống dự báo...");
-        
-        // Gọi đến link Render của ông
-        fetch("https://lora-ai-9ti1.onrender.com/")
+        const aiToast = document.getElementById('ai-status-toast');
+        const aiText = document.getElementById('ai-text');
+        const aiIcon = document.getElementById('ai-icon');
+
+        console.log("Lora AI: Đang gửi tín hiệu đánh thức...");
+
+        // Gõ cửa Render
+        fetch("https://lora-ai-9ti1.onrender.com/", { mode: 'cors' })
             .then(response => {
                 if (response.ok) {
-                    console.log("Lora AI: Đã thức giấc và sẵn sàng phục vụ Leader!");
+                    // KHI ĐÃ THỨC GIẤC
+                    aiToast.style.background = "#00923F"; // Màu xanh Bách Hóa Xanh
+                    aiToast.style.color = "#fff";
+                    aiText.innerText = "Lora AI đã sẵn sàng!";
+                    aiIcon.className = "fas fa-check-circle"; // Đổi icon sang tích xanh
+                    console.log("Lora AI: Đã thức giấc!");
+                    
+                    // Sau 5 giây tự ẩn đi cho đỡ vướng
+                    setTimeout(() => { aiToast.style.opacity = "0.5"; }, 5000);
                 }
             })
             .catch(error => {
-                console.log("Lora AI: Hệ thống đang khởi động, vui lòng đợi trong giây lát...");
+                // KHI ĐANG ĐỢI HOẶC LỖI
+                console.log("Lora AI: Đang khởi động...");
             });
     });
 </script>
