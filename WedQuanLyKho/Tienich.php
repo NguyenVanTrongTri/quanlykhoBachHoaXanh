@@ -417,44 +417,48 @@
         messengerBox.classList.remove('shift-left');
     });
     window.sendAI = function () {
+        const aiInput = document.getElementById('ai-text');
         const msg = aiInput.value.trim();
         const box = document.getElementById('ai-messages');
 
-        if (!msg) {
-            const warn = document.createElement('div');
-            warn.className = 'ai-msg ai';
-            warn.textContent = '❗ Vui lòng nhập câu hỏi trước khi gửi';
-            box.appendChild(warn);
-            box.scrollTop = box.scrollHeight;
-            return;
-        }
+        if (!msg) return;
 
+        // 1. Hiển thị tin nhắn của User ngay lập tức
         const userMsg = document.createElement('div');
         userMsg.className = 'ai-msg user';
         userMsg.textContent = msg;
         box.appendChild(userMsg);
-
+        
         aiInput.value = '';
         box.scrollTop = box.scrollHeight;
 
-        fetch(window.BASE_URL +'chatbox.php', {
+        // 2. Hiển thị trạng thái "Đang trả lời..."
+        const loadingMsg = document.createElement('div');
+        loadingMsg.className = 'ai-msg ai';
+        loadingMsg.id = 'ai-loading';
+        loadingMsg.textContent = '🤖 Lora đang suy nghĩ...';
+        box.appendChild(loadingMsg);
+
+        // 3. GỌI THẲNG SANG RENDER (Bỏ qua chatbox.php)
+        fetch("https://lora-ai-9ti1.onrender.com/api/chat", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: msg })
+            body: JSON.stringify({ text: msg }) // Lưu ý: Python nhận 'text', không phải 'message'
         })
         .then(res => res.json())
         .then(data => {
+            // Xóa dòng loading và thay bằng câu trả lời thật
+            const loading = document.getElementById('ai-loading');
+            if (loading) loading.remove();
+
             const aiMsg = document.createElement('div');
             aiMsg.className = 'ai-msg ai';
-            aiMsg.textContent = data.reply;
+            aiMsg.textContent = data.response; // Python trả về 'response'
             box.appendChild(aiMsg);
             box.scrollTop = box.scrollHeight;
         })
         .catch(err => {
-            const aiMsg = document.createElement('div');
-            aiMsg.className = 'ai-msg ai';
-            aiMsg.textContent = '❌ Lỗi: ' + err.message;
-            box.appendChild(aiMsg);
+            document.getElementById('ai-loading').textContent = '❌ Lora chưa dậy kịp, Trọng thử lại nhé!';
         });
     };
     aiInput.addEventListener('keydown', e => {
