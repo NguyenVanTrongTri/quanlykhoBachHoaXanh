@@ -49,37 +49,20 @@
     display: flex;
     justify-content: space-between;
 }
-.ai-body {
+.ai-body{
     flex: 1;
     padding: 10px;
     overflow-y: auto;
     background: #fff;
-    /* --- BỔ SUNG 2 DÒNG NÀY --- */
-    display: flex;
-    flex-direction: column;
 }
-.ai-msg {
+.ai-msg{
     padding: 8px 10px;
     margin-bottom: 8px;
     border-radius: 10px;
     font-size: 14px;
-    /* --- THÊM 2 DÒNG NÀY ĐỂ HIỆN NỘI DUNG --- */
-    min-height: 20px;     /* Đảm bảo khung luôn có chiều cao để chứa chữ */
-    display: block;        /* Ép trình duyệt render nội dung bên trong thẻ div */
 }
-.ai-msg.ai { 
-    background: #e2ffe9; 
-    align-self: flex-start; /* Ép khung về bên trái */
-    max-width: 85%;        /* Không cho tràn hết chiều ngang */
-}
-
-/* Tin nhắn User: Co lại và nằm bên phải */
-.ai-msg.user { 
-    background: #d9e8ff; 
-    align-self: flex-end;   /* Ép khung về bên phải */
-    max-width: 85%;        /* Không cho tràn hết chiều ngang */
-    text-align: left;       /* Chữ bên trong vẫn canh trái cho dễ đọc */
-}
+.ai-msg.ai{ background: #e2ffe9; }
+.ai-msg.user{ background: #d9e8ff; text-align: right; }
 
 .ai-input {
     display: flex;
@@ -434,68 +417,46 @@
         messengerBox.classList.remove('shift-left');
     });
     window.sendAI = function () {
-    const aiInput = document.getElementById('ai-text');
-    const msg = aiInput.value.trim();
-    const box = document.getElementById('ai-messages');
+        const msg = aiInput.value.trim();
+        const box = document.getElementById('ai-messages');
 
-    if (!msg) return;
-
-    // 1. Thêm tin nhắn của User
-    const userMsg = document.createElement('div');
-    userMsg.className = 'ai-msg user';
-    userMsg.textContent = msg;
-    box.appendChild(userMsg);
-
-    // Xóa input ngay lập tức
-    aiInput.value = '';
-
-    // Hàm cuộn dùng chung để tái sử dụng
-    const scrollToBottom = () => {
-        setTimeout(() => {
+        if (!msg) {
+            const warn = document.createElement('div');
+            warn.className = 'ai-msg ai';
+            warn.textContent = '❗ Vui lòng nhập câu hỏi trước khi gửi';
+            box.appendChild(warn);
             box.scrollTop = box.scrollHeight;
-        }, 50);
-    };
-
-    scrollToBottom();
-
-    // 2. Hiển thị Loading (Dùng ID duy nhất để tránh xung đột nếu nhấn gửi nhanh)
-    const loadingId = 'loading-' + Date.now();
-    const loadingMsg = document.createElement('div');
-    loadingMsg.className = 'ai-msg ai';
-    loadingMsg.id = loadingId;
-    loadingMsg.textContent = '🤖 Lora đang suy nghĩ...';
-    box.appendChild(loadingMsg);
-    
-    scrollToBottom();
-
-    // 3. Gọi API
-    fetch("https://lora-ai-9ti1.onrender.com/api/chat", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: msg })
-    })
-    .then(res => res.json())
-    .then(data => {
-        // Xóa đúng cái loading vừa tạo
-        const loading = document.getElementById(loadingId);
-        if (loading) loading.remove();
-
-        const aiMsg = document.createElement('div');
-        aiMsg.className = 'ai-msg ai';
-        aiMsg.textContent = data.response;
-        box.appendChild(aiMsg);
-
-        scrollToBottom();
-    })
-    .catch(err => {
-        const loading = document.getElementById(loadingId);
-        if (loading) {
-            loading.className = 'ai-msg ai error'; // Thêm class error nếu muốn đổi màu đỏ
-            loading.textContent = '❌ Lỗi kết nối';
+            return;
         }
-        scrollToBottom();
-    });
-};
+
+        const userMsg = document.createElement('div');
+        userMsg.className = 'ai-msg user';
+        userMsg.textContent = msg;
+        box.appendChild(userMsg);
+
+        aiInput.value = '';
+        box.scrollTop = box.scrollHeight;
+
+        fetch(window.BASE_URL +'chatbox.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const aiMsg = document.createElement('div');
+            aiMsg.className = 'ai-msg ai';
+            aiMsg.textContent = data.reply;
+            box.appendChild(aiMsg);
+            box.scrollTop = box.scrollHeight;
+        })
+        .catch(err => {
+            const aiMsg = document.createElement('div');
+            aiMsg.className = 'ai-msg ai';
+            aiMsg.textContent = '❌ Lỗi: ' + err.message;
+            box.appendChild(aiMsg);
+        });
+    };
     aiInput.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
