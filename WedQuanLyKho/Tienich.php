@@ -63,21 +63,39 @@
 }
 .ai-msg.ai{ background: #e2ffe9; }
 .ai-msg.user{ background: #d9e8ff; text-align: right; }
-.ai-input{
+
+.ai-input {
     display: flex;
     padding: 8px;
     gap: 6px;
+    border-top: 1px solid #ddd; 
+    background: #fff;
+    border-radius: 0 0 15px 15px; 
+    
 }
-.ai-input input{
+
+.ai-input input {
     flex: 1;
-    padding: 6px;
+    padding: 8px 12px;     
+    border-radius: 20px;      
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 14px;
 }
-.ai-input button{
+
+.ai-input button {
     background: #0a8f3c;
     color: white;
     border: none;
-    padding: 6px 10px;
-    border-radius: 6px;
+    padding: 8px 14px;       
+    border-radius: 20px;      
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.ai-input button:hover {
+    background: #087233;      
 }
 /* ================= MESSENGER FLOAT ================= */
 #messenger-float{
