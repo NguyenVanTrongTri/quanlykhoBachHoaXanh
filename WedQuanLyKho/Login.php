@@ -330,5 +330,22 @@ if (isset($_POST["btnLogin"]))
         }
     });
 </script>
+<script>
+    // --- CƠ CHẾ ĐÁNH THỨC LORA AI TỰ ĐỘNG ---
+    document.addEventListener("DOMContentLoaded", function() {
+        console.log("Lora AI: Đang gửi tín hiệu đánh thức hệ thống dự báo...");
+        
+        // Gọi đến link Render của ông
+        fetch("https://lora-ai-9ti1.onrender.com/")
+            .then(response => {
+                if (response.ok) {
+                    console.log("Lora AI: Đã thức giấc và sẵn sàng phục vụ Leader!");
+                }
+            })
+            .catch(error => {
+                console.log("Lora AI: Hệ thống đang khởi động, vui lòng đợi trong giây lát...");
+            });
+    });
+</script>
 </body>
 </html>
