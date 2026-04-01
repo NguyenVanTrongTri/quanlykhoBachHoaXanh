@@ -63,9 +63,7 @@
 }
 .ai-msg.ai{ background: #e2ffe9; }
 .ai-msg.user{ background: #d9e8ff; text-align: right; }
-#ai-messages {
-    scroll-behavior: smooth; /* Giúp hiệu ứng cuộn trượt từ từ, không bị giật */
-}
+
 .ai-input {
     display: flex;
     padding: 8px;
@@ -468,7 +466,7 @@
             if (loading) loading.textContent = '❌ Lỗi kết nối rồi Trọng ơi!';
             box.scrollTop = box.scrollHeight;
         });
-    };
+};
     aiInput.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
