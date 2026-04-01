@@ -417,46 +417,56 @@
         messengerBox.classList.remove('shift-left');
     });
     window.sendAI = function () {
+        const aiInput = document.getElementById('ai-text');
         const msg = aiInput.value.trim();
         const box = document.getElementById('ai-messages');
 
-        if (!msg) {
-            const warn = document.createElement('div');
-            warn.className = 'ai-msg ai';
-            warn.textContent = '❗ Vui lòng nhập câu hỏi trước khi gửi';
-            box.appendChild(warn);
-            box.scrollTop = box.scrollHeight;
-            return;
-        }
+        if (!msg) return;
 
+        // 1. Thêm tin nhắn của User
         const userMsg = document.createElement('div');
         userMsg.className = 'ai-msg user';
         userMsg.textContent = msg;
         box.appendChild(userMsg);
-
-        aiInput.value = '';
+        
+        // LỆNH QUAN TRỌNG: Cuộn xuống ngay sau khi User gửi
         box.scrollTop = box.scrollHeight;
 
-        fetch(window.BASE_URL +'chatbox.php', {
+        aiInput.value = '';
+
+        // 2. Hiển thị Loading
+        const loadingMsg = document.createElement('div');
+        loadingMsg.className = 'ai-msg ai';
+        loadingMsg.id = 'ai-loading';
+        loadingMsg.textContent = '🤖 Lora đang suy nghĩ...';
+        box.appendChild(loadingMsg);
+        box.scrollTop = box.scrollHeight; // Cuộn tiếp để thấy dòng Loading
+
+        // 3. Gọi API
+        fetch("https://lora-ai-9ti1.onrender.com/api/chat", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: msg })
+            body: JSON.stringify({ text: msg })
         })
         .then(res => res.json())
         .then(data => {
+            const loading = document.getElementById('ai-loading');
+            if (loading) loading.remove();
+
             const aiMsg = document.createElement('div');
             aiMsg.className = 'ai-msg ai';
-            aiMsg.textContent = data.reply;
+            aiMsg.textContent = data.response;
             box.appendChild(aiMsg);
+
+            // LỆNH QUAN TRỌNG NHẤT: Cuộn xuống sau khi AI trả lời xong
             box.scrollTop = box.scrollHeight;
         })
         .catch(err => {
-            const aiMsg = document.createElement('div');
-            aiMsg.className = 'ai-msg ai';
-            aiMsg.textContent = '❌ Lỗi: ' + err.message;
-            box.appendChild(aiMsg);
+            const loading = document.getElementById('ai-loading');
+            if (loading) loading.textContent = '❌ Lỗi kết nối rồi Trọng ơi!';
+            box.scrollTop = box.scrollHeight;
         });
-    };
+};
     aiInput.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
