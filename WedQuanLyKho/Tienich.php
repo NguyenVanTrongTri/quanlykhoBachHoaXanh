@@ -54,15 +54,29 @@
     padding: 10px;
     overflow-y: auto;
     background: #fff;
+    /* BỔ SUNG CÁC DÒNG DƯỚI ĐÂY */
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Khoảng cách giữa các tin nhắn */
 }
 .ai-msg{
-    padding: 8px 10px;
-    margin-bottom: 8px;
+    padding: 8px 12px;
+    /* margin-bottom: 8px; -> Có thể bỏ vì đã có gap ở trên */
     border-radius: 10px;
     font-size: 14px;
+    /* BỔ SUNG CÁC DÒNG DƯỚI ĐÂY */
+    max-width: 85%; /* Không cho tin nhắn tràn hết chiều ngang */
+    word-wrap: break-word; /* Chống tràn chữ khi gặp link dài */
+    line-height: 1.4;
 }
-.ai-msg.ai{ background: #e2ffe9; }
-.ai-msg.user{ background: #d9e8ff; text-align: right; }
+.ai-msg.ai{ 
+    background: #e2ffe9; 
+    align-self: flex-start; 
+}
+.ai-msg.user{ 
+    background: #d9e8ff; 
+    /* text-align: right; -> Bỏ dòng này */
+    align-self: flex-end;}
 
 .ai-input {
     display: flex;
@@ -417,55 +431,67 @@
         messengerBox.classList.remove('shift-left');
     });
     window.sendAI = function () {
-        const aiInput = document.getElementById('ai-text');
-        const msg = aiInput.value.trim();
-        const box = document.getElementById('ai-messages');
+    const aiInput = document.getElementById('ai-text');
+    const msg = aiInput.value.trim();
+    const box = document.getElementById('ai-messages');
 
-        if (!msg) return;
+    if (!msg) return;
 
-        // 1. Thêm tin nhắn của User
-        const userMsg = document.createElement('div');
-        userMsg.className = 'ai-msg user';
-        userMsg.textContent = msg;
-        box.appendChild(userMsg);
-        
-        // LỆNH QUAN TRỌNG: Cuộn xuống ngay sau khi User gửi
-        box.scrollTop = box.scrollHeight;
+    // 1. Thêm tin nhắn của User
+    const userMsg = document.createElement('div');
+    userMsg.className = 'ai-msg user';
+    userMsg.textContent = msg;
+    box.appendChild(userMsg);
 
-        aiInput.value = '';
+    // Xóa input ngay lập tức
+    aiInput.value = '';
 
-        // 2. Hiển thị Loading
-        const loadingMsg = document.createElement('div');
-        loadingMsg.className = 'ai-msg ai';
-        loadingMsg.id = 'ai-loading';
-        loadingMsg.textContent = '🤖 Lora đang suy nghĩ...';
-        box.appendChild(loadingMsg);
-        box.scrollTop = box.scrollHeight; // Cuộn tiếp để thấy dòng Loading
-
-        // 3. Gọi API
-        fetch("https://lora-ai-9ti1.onrender.com/api/chat", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: msg })
-        })
-        .then(res => res.json())
-        .then(data => {
-            const loading = document.getElementById('ai-loading');
-            if (loading) loading.remove();
-
-            const aiMsg = document.createElement('div');
-            aiMsg.className = 'ai-msg ai';
-            aiMsg.textContent = data.response;
-            box.appendChild(aiMsg);
-
-            // LỆNH QUAN TRỌNG NHẤT: Cuộn xuống sau khi AI trả lời xong
+    // Hàm cuộn dùng chung để tái sử dụng
+    const scrollToBottom = () => {
+        setTimeout(() => {
             box.scrollTop = box.scrollHeight;
-        })
-        .catch(err => {
-            const loading = document.getElementById('ai-loading');
-            if (loading) loading.textContent = '❌ Lỗi kết nối rồi Trọng ơi!';
-            box.scrollTop = box.scrollHeight;
-        });
+        }, 50);
+    };
+
+    scrollToBottom();
+
+    // 2. Hiển thị Loading (Dùng ID duy nhất để tránh xung đột nếu nhấn gửi nhanh)
+    const loadingId = 'loading-' + Date.now();
+    const loadingMsg = document.createElement('div');
+    loadingMsg.className = 'ai-msg ai';
+    loadingMsg.id = loadingId;
+    loadingMsg.textContent = '🤖 Lora đang suy nghĩ...';
+    box.appendChild(loadingMsg);
+    
+    scrollToBottom();
+
+    // 3. Gọi API
+    fetch("https://lora-ai-9ti1.onrender.com/api/chat", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: msg })
+    })
+    .then(res => res.json())
+    .then(data => {
+        // Xóa đúng cái loading vừa tạo
+        const loading = document.getElementById(loadingId);
+        if (loading) loading.remove();
+
+        const aiMsg = document.createElement('div');
+        aiMsg.className = 'ai-msg ai';
+        aiMsg.textContent = data.response;
+        box.appendChild(aiMsg);
+
+        scrollToBottom();
+    })
+    .catch(err => {
+        const loading = document.getElementById(loadingId);
+        if (loading) {
+            loading.className = 'ai-msg ai error'; // Thêm class error nếu muốn đổi màu đỏ
+            loading.textContent = '❌ Lỗi kết nối';
+        }
+        scrollToBottom();
+    });
 };
     aiInput.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
