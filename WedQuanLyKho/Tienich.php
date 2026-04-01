@@ -58,11 +58,14 @@
     display: flex;
     flex-direction: column;
 }
-.ai-msg{
+.ai-msg {
     padding: 8px 10px;
     margin-bottom: 8px;
     border-radius: 10px;
     font-size: 14px;
+    /* --- THÊM 2 DÒNG NÀY ĐỂ HIỆN NỘI DUNG --- */
+    min-height: 20px;     /* Đảm bảo khung luôn có chiều cao để chứa chữ */
+    display: block;        /* Ép trình duyệt render nội dung bên trong thẻ div */
 }
 .ai-msg.ai { 
     background: #e2ffe9; 
