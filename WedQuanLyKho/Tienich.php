@@ -55,14 +55,27 @@
     overflow-y: auto;
     background: #fff;
 }
-.ai-msg{
-    padding: 8px 10px;
+.ai-msg {
+    padding: 8px 12px;
     margin-bottom: 8px;
     border-radius: 10px;
     font-size: 14px;
+    /* --- BỔ SUNG 2 DÒNG NÀY ĐỂ HIỆN CHỮ CHUẨN --- */
+    width: fit-content;    /* Giúp bong bóng co lại vừa khít với nội dung chữ */
+    max-width: 85%;       /* Không cho bong bóng tràn quá chiều ngang khung chat */
+    word-wrap: break-word; /* Tự xuống dòng nếu gặp nội dung quá dài */
 }
-.ai-msg.ai{ background: #e2ffe9; }
-.ai-msg.user{ background: #d9e8ff; text-align: right; }
+
+.ai-msg.ai { 
+    background: #e2ffe9; 
+    margin-right: auto;    /* Đẩy toàn bộ bong bóng chat AI sang bên trái */
+}
+
+.ai-msg.user { 
+    background: #d9e8ff; 
+    margin-left: auto;     /* Đẩy toàn bộ bong bóng chat User sang bên phải */
+    text-align: left;      /* Giữ chữ bên trong căn trái cho dễ đọc nội dung */
+}
 
 .ai-input {
     display: flex;
