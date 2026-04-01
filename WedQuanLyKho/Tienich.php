@@ -49,31 +49,20 @@
     display: flex;
     justify-content: space-between;
 }
-/* Tìm class .ai-body và THÊM các dòng này */
-.ai-body {
-    display: flex;          /* Bắt buộc để điều khiển tin nhắn con */
-    flex-direction: column; /* Xếp tin nhắn từ trên xuống dưới */
-    gap: 10px;              /* Tạo khoảng cách đều giữa các tin nhắn */
-    scroll-behavior: smooth; /* Giúp lệnh scrollTop chạy mượt hơn */
+.ai-body{
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    background: #fff;
 }
-
-/* Tìm class .ai-msg và THÊM các dòng này */
-.ai-msg {
-    max-width: 85%;         /* Giới hạn độ rộng để bong bóng co lại theo chữ */
-    word-wrap: break-word;  /* Xuống dòng nếu gặp link hoặc từ quá dài */
-    line-height: 1.4;       /* Khoảng cách dòng cho dễ đọc */
-    display: inline-block;  /* Giúp bong bóng ôm sát nội dung */
+.ai-msg{
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    font-size: 14px;
 }
-
-/* Sửa lại 2 class này để căn lề chuẩn xác */
-.ai-msg.ai {
-    align-self: flex-start; /* Ép bong bóng chat về bên trái */
-}
-
-.ai-msg.user {
-    align-self: flex-end;   /* Ép bong bóng chat về bên phải (thay cho text-align) */
-    text-align: left;       /* Chữ bên trong vẫn căn trái cho đẹp */
-}
+.ai-msg.ai{ background: #e2ffe9; }
+.ai-msg.user{ background: #d9e8ff; text-align: right; }
 
 .ai-input {
     display: flex;
