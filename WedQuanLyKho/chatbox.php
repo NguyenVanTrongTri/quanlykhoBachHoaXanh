@@ -2,44 +2,66 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-// 1. Chỉ kết nối DB nếu thực sự cần lưu log (giảm thời gian load)
-require_once 'KetNoi/connect.php';
+// 1. Cấu hình URL của Server Python (Thay đổi URL này nếu bạn deploy lên Render/Heroku)
+define('PYTHON_API_URL', 'http://127.0.0.1:10000/api/chat');
 
+// Nhận tin nhắn từ Frontend
 $data = json_decode(file_get_contents("php://input"), true);
 $message = trim($data['message'] ?? '');
 
 if ($message === '') {
-    echo json_encode(['reply' => '❗ Bạn chưa nhập nội dung chat kìa!']);
+    echo json_encode(['reply' => '❗ Bạn chưa nhập câu hỏi']);
     exit;
 }
 
-$lora_api_url = "https://lora-ai-9ti1.onrender.com/api/chat";
-$post_data = json_encode(['text' => $message]);
+try {
+    // 2. Sử dụng cURL để gửi yêu cầu đến Flask (app.py)
+    $ch = curl_init(PYTHON_API_URL);
+    
+    // Tạo payload để gửi sang Python
+    $payload = json_encode(['text' => $message]);
 
-$ch = curl_init();
-curl_setopt_array($ch, [
-    CURLOPT_URL => $lora_api_url,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST => true,
-    CURLOPT_POSTFIELDS => $post_data,
-    CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Connection: Keep-Alive'], // Giữ kết nối
-    CURLOPT_TIMEOUT => 30, // Tăng timeout lên 30s để đợi Render nạp Model nặng
-    CURLOPT_CONNECTTIMEOUT => 10,
-    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1, // Ép dùng HTTP 1.1 để giữ Keep-Alive tốt hơn
-    CURLOPT_SSL_VERIFYPEER => false // Bỏ qua check SSL nếu server nội bộ chậm
-]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Content-Length: ' . strlen($payload)
+    ]);
+    
+    // Thời gian chờ (timeout) để tránh treo web nếu Python server chậm
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
-$response = curl_exec($ch);
-$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
 
-if ($response) {
-    $resData = json_decode($response, true);
-    $reply = ($http_code === 200 && isset($resData['response'])) 
-             ? $resData['response'] 
-             : "🤖 Lora đang xử lý dữ liệu, Trọng đợi xíu nhé!";
-} else {
-    $reply = "🤖 Lora AI đang khởi động... Vui lòng thử lại sau 15 giây!";
+    // 3. Xử lý kết quả trả về từ Python
+    if ($error) {
+        throw new Exception("Không thể kết nối tới Server AI: " . $error);
+    }
+
+    if ($httpCode !== 200) {
+        $errorData = json_decode($response, true);
+        $errorMsg = $errorData['message'] ?? 'Lỗi không xác định từ Server AI';
+        echo json_encode(['reply' => "❌ AI đang bận: $errorMsg"]);
+        exit;
+    }
+
+    $result = json_decode($response, true);
+    
+    // Trả về phản hồi từ AI cho Frontend
+    // Ở đây $result['response'] chính là câu trả lời từ hàm get_answer() trong Python
+    echo json_encode([
+        'reply' => $result['response'],
+        'intent' => $result['intent'] ?? 'unknown',
+        'confidence' => $result['confidence'] ?? 0
+    ]);
+
+} catch (Exception $e) {
+    echo json_encode([
+        'reply' => '⚠️ Hệ thống AI đang bảo trì. Vui lòng thử lại sau!',
+        'error_detail' => $e->getMessage()
+    ]);
 }
-
-echo json_encode(['reply' => $reply]);
