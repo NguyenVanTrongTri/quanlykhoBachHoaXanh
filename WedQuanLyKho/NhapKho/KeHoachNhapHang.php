@@ -27,6 +27,7 @@ if (isset($_SESSION['MaTK'])) {
 }
 // đường dẫn đầy đủ cho HTML
 $avatarPath = "../uploads/avatar/$avatar";
+
 function getChucVu($maTK) {
     global $conn; // dùng PDO connection từ connect.php
 
@@ -45,37 +46,39 @@ function getChucVu($maTK) {
 $chucVu = null;
 if (isset($_SESSION['MaTK'])) {
     $chucVu = getChucVu($_SESSION['MaTK']);
-}
+} 
 
-
-function getPhieuXuat() {
+function getPhieuNhap() {
     $conn = connectdb();
     $sql = "SELECT 
             STT,
-            MaPhieuXuat,
+            MaPhieuNhap,
             DonVi,
             BoPhan,
-            NguoiNhanHang,
+            NguoiGiaoHang,
             DiaChi,
             ThoiGian,
             DiaDiem,
-            XuatTaiKho,
-            LyDo
-        FROM phieuxuat
+            NhapTaiKho
+        FROM phieunhap
         ORDER BY ThoiGian DESC";
     $stmt = $conn->prepare($sql);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-$from = date('Y-m-d 00:00:00');;
+
+$from = date('Y-m-d 00:00:00');
 $to   = date('Y-m-d 23:59:59');
 $kq = [
     'tongphieu' => 0,
     'tonggiatri' => 0,
 ];
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['loc_items'])) {
+$fromInput = '';
+$toInput   = '';
 
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['loc_items'])) {
     $boloc = $_POST['boloc'] ?? '';
+
     switch ($boloc) {
         case 'homnay':
             $from = date('Y-m-d 00:00:00');
@@ -95,53 +98,64 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['loc_items'])) {
             $from = date('Y-m-d 00:00:00', strtotime('-1 month'));
             break;
     }
-
     $sql = "
-        SELECT 
-            COUNT(DISTINCT px.MaPhieuXuat) AS tongphieu,
-            COALESCE(SUM(ct.ThanhTien),0) AS tonggiatri
-        FROM phieuxuat px
-        JOIN chitietphieuxuat ct ON px.MaPhieuXuat = ct.MaPhieuXuat
-        WHERE px.ThoiGian BETWEEN :from AND :to
+    SELECT 
+    COUNT(DISTINCT pn.MaPhieuNhap) AS tongphieu,
+    SUM(ct.ThanhTien) AS tonggiatri
+    FROM phieunhap pn
+    INNER JOIN chitietphieunhap ct
+        ON pn.MaPhieuNhap = ct.MaPhieuNhap
+    WHERE pn.ThoiGian BETWEEN :from AND :to
     ";
     $stmt = $conn->prepare($sql);
-    $stmt->execute(compact('from','to'));
+    $stmt->execute([
+        ':from' => $from,
+        ':to'   => $to
+    ]);
     $kq = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $sqltenhang = "
+   $sqltenhang = "
         SELECT 
             hh.TenHangHoa AS tenhanghoa,
-            np.TenNPP AS tennhanphanphoi,
-            SUM(ct.SoLuongThucTeXuat) AS soluongthucte
-        FROM phieuxuat px
-        JOIN chitietphieuxuat ct ON px.MaPhieuXuat = ct.MaPhieuXuat
-        JOIN hanghoa hh ON hh.MaHangHoa = ct.MaHangHoa
-        JOIN nhaphanphoi np ON np.MaNPP = px.MaNPP
-        WHERE px.ThoiGian BETWEEN :from AND :to
-        GROUP BY hh.MaHangHoa, np.MaNPP
-        ORDER BY soluongthucte DESC
+            nc.TenNCC AS tennhacungcap,
+            ct.SoLuongThucTeNhap AS soluongthucte
+        FROM phieunhap pn
+        INNER JOIN chitietphieunhap ct
+            ON pn.MaPhieuNhap = ct.MaPhieuNhap
+        INNER JOIN hanghoa hh 
+            ON hh.MaHangHoa = ct.MaHangHoa
+        INNER JOIN nhacungcap nc on nc.MaNCC=pn.MaNCC
+        WHERE pn.ThoiGian BETWEEN :from AND :to
+        ORDER BY ct.SoLuongThucTeNhap DESC
         LIMIT 1
-    ";
+        ";
     $stmt = $conn->prepare($sqltenhang);
-    $stmt->execute(compact('from','to'));
+    $stmt->execute([
+        ':from' => $from,
+        ':to'   => $to
+    ]);
     $tenhanghoa = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $sqltenhangitnhat = "
-        SELECT 
-            hh.TenHangHoa AS tenhanghoaitnhat
-        FROM phieuxuat px
-        JOIN chitietphieuxuat ct ON px.MaPhieuXuat = ct.MaPhieuXuat
-        JOIN hanghoa hh ON hh.MaHangHoa = ct.MaHangHoa
-        WHERE px.ThoiGian BETWEEN :from AND :to
-        GROUP BY hh.MaHangHoa
-        ORDER BY SUM(ct.SoLuongThucTeXuat) ASC
+    SELECT 
+        hh.TenHangHoa AS tenhanghoaitnhat
+    FROM phieunhap pn
+    INNER JOIN chitietphieunhap ct
+        ON pn.MaPhieuNhap = ct.MaPhieuNhap
+    INNER JOIN hanghoa hh 
+        ON hh.MaHangHoa = ct.MaHangHoa
+    WHERE pn.ThoiGian BETWEEN :from AND :to
+    ORDER BY ct.SoLuongThucTeNhap ASC
         LIMIT 1
     ";
-    $stmt = $conn->prepare($sqltenhangitnhat);
-    $stmt->execute(compact('from','to'));
+    $stmt = $conn->prepare( $sqltenhangitnhat);
+    $stmt->execute([
+        ':from' => $from,
+        ':to'   => $to
+    ]);
     $tenhanghoaitnhat = $stmt->fetch(PDO::FETCH_ASSOC);
+    
 }
-
 function getTimeRange($type) {
     switch ($type) {
 
@@ -196,10 +210,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['thongke_item'])) {
         $time2 = getTimeRange($ketthuc);
 
         // ---- KHOẢNG 1
-        $sql = "SELECT COUNT(px.MaPhieuXuat) AS soluong, SUM(ct.ThanhTien) AS giatri
-                FROM  phieuxuat px inner join chitietphieuxuat ct 
-                on px.MaPhieuXuat=ct.MaPhieuXuat
-                WHERE px.ThoiGian BETWEEN :from AND :to";
+        $sql = "SELECT COUNT(pn.MaPhieuNhap) AS soluong, SUM(ct.ThanhTien) AS giatri
+                FROM  phieunhap pn inner join chitietphieunhap ct 
+                on pn.MaPhieuNhap=ct.MaPhieuNhap
+                WHERE pn.ThoiGian BETWEEN :from AND :to";
         $stmt = $conn->prepare($sql);
         $stmt->execute([
             ':from' => $time1['from'],
@@ -528,7 +542,7 @@ include('../ThongTinTaiKhoan.php');
 // chức năng click tên để mở cửa sổ thông tin tài khoảng
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.username').addEventListener('click', function() {
-       fetch('../ThongTinTaiKhoan.php')
+        fetch('../ThongTinTaiKhoan.php')
             .then(response => response.text())
             .then(html => {
                 document.body.insertAdjacentHTML('beforeend', html);
@@ -549,9 +563,10 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
-        <button class="overview-btn" onclick="window.location.href='../trangchu.php'" >Tổng quan</button>
+        <button class="overview-btn" onclick="window.location.href='../TrangChu.php'" >Tổng quan</button>
 
-        <script>
+        <!-- NHẬP KHO -->
+      <script>
         // Truyền biến chức vụ sang JS
         window.userChucVu = '<?php echo $chucVu; ?>';
         </script>
@@ -562,6 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="menu-item" onclick="checkPermission('../NhapKho/CapNhatPhieuNhapKho.php')">> Cập nhật phiếu nhập</div>
         <div class="menu-item" onclick="checkPermission('../NhapKho/ThongKePhieuNhapKho.php')">> Thống kê phiếu nhập</div>
         <div class="menu-item" onclick="checkPermission('../NhapKho/KeHoachNhapHang.php')">> Kế hoạch nhập hàng</div>
+
         <!-- XUẤT KHO -->
         <div class="menu-item parent">📤 Xuất kho</div>
         <div class="menu-item" onclick="checkPermission('../XuatKho/TaoPhieuXuat.php')">> Tạo phiếu xuất</div>
@@ -579,171 +595,12 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="menu-item parent">📦 Hàng hóa</div>
         <div class="menu-item" onclick="checkPermission('../HangHoa/ThemHangHoa.php')">> Thêm hàng hóa</div>
         <div class="menu-item" onclick="checkPermission('../HangHoa/CapNhatHangHoa.php')">> Cập nhật hàng hóa</div>
-        
+  
         <!-- NHÂN VIÊN -->
         <div class="menu-item parent">👥 Nhân viên</div>
         <div class="menu-item" onclick="checkPermission('../NhanVien/QuanLyNhanVien.php')">> Quản lý nhân viên</div>
         <div class="menu-item" onclick="checkPermission('../TaiKhoan/QuanLyTaiKhoan.php')">> Quản lý tài khoản</div>
-
+        
     </div>
-    <div class="content">
-        <header class="search-area">
-            <form method="post">
-            <select id="boloc" name="boloc" class="search-input">
-                            <option value="" selected>-- Vui lòng chọn --</option>
-                            <option value="homnay">Hôm nay</option>
-                            <option value="homqua">Hôm qua</option>
-                            <option value="7ngaytruoc">7 ngày trước</option>
-                            <option value="1thangtruoc"> 1 tháng trước</option>
-                        </select>
-            <button class="btn btn-search" type="submit" name="loc_items"> Lọc </button>
-            </form>
-        </header>
-        <div class="form-container">
-            <div class="section-box">
-            <form method="post">
-                <div class="section-title">Thống kê phiếu xuất</div>
-                <div class="form-group">
-                    <div class="form-field">
-                        <label for="tongso">Tổng số phiếu xuất kho</label>
-                        <input type="text" id="tongso" name="tongso" value="<?= $kq['tongphieu'] ?>" placeholder="" readonly>
-                        <label for="tonggiatri">Tổng giá trị xuất kho</label>
-                        <input type="text" id="tonggiatri" name="tonggiatri" value="<?= number_format($kq['tonggiatri']) ?> đ" placeholder="" readonly>
-                    </div>
-                     <div class="form-field"> 
-                        <label for="thoigianbatdau">Thời gian bắt đầu </label>
-                        <input type="datetime-local" id="thoigianbatdau" name="thoigianbatdau" value="<?= $from ? date('Y-m-d\TH:i', strtotime($from)) : '' ?>" placeholder="">
-                    </div>
-                    <div class="form-field">
-                        <label for="mathangnhieunhat">Mặt hàng xuất nhiều nhất</label>
-                        <input type="text" id="mathangnhieunhat" name="mathangnhieunhat" value="<?= $tenhanghoa['tenhanghoa']?? 'Không có hàng hóa' ?>" placeholder="" readonly>
-                        <label for="mathangitnhat">Mặt hàng xuất ít nhất</label>
-                        <input type="text" id="mathangitnhat" name="mathangitnhat" value="<?= $tenhanghoaitnhat['tenhanghoaitnhat']?? 'Không có hàng hóa' ?>" placeholder="" readonly>
-                    </div>
-                    <div class="form-field">
-                        <label for="thoigianketthuc"> Thời gian kết thúc </label>
-                        <input type="datetime-local" id="thoigianketthuc" name="thoigianketthuc"  value="<?= $to ? date('Y-m-d\TH:i', strtotime($to)) : '' ?>" placeholder="">
-                    </div>
-                    <div class="form-field">
-                        <label for="donviphanphoi">Đơn vị phân phối chính </label>
-                        <input type="text" id="donviphanphoi" name="donviphanphoi" value="<?= $tenhanghoa['tennhanphanphoi'] ?? 'Không có' ?>" placeholder="" readonly>
-                        <label for="soluong"> Số lượng đã xuất </label>
-                        <input type="text" id="soluong" name="soluong" value="<?= $tenhanghoa['soluongthucte']?? '0' ?>" placeholder="" readonly>
-                    </div>
-                    <div class="form-field">
-                        <label for="sosanh">So sánh</label>
-                        <select id="batdau" name="batdau" class="search-input">
-                            <option value="" selected>-- Vui lòng chọn --</option>
-                            <option value="homnay">Hôm nay</option>
-                            <option value="tuantruoc">Tuần này</option>
-                            <option value="thangnay"> Tháng này</option>
-                        </select>
-                        <select id="ketthuc" name="ketthuc" class="search-input">
-                            <option value="" selected>-- Vui lòng chọn --</option>
-                            <option value="homqua">Hôm qua</option>
-                            <option value="tuantruoc">Tuần trước</option>
-                            <option value="thangtruoc"> Tháng trước</option>
-                        </select>
-                    </div>
-                    <div class="form-field">
-                        <label for="diadiem">Địa điểm</label>
-                        <input type="text" id="diadiem"  name="diadiem" placeholder="" readonly>
-                    </div>
-                    <div class="form-field">
-                        <label for="sophieunhap">Số phiếu xuất</label>
-                        <input type="text" id="soluonghomnay" name="soluonghomnay" style="width:100px;" value="<?= $kq1['soluong'] ?? 0 ?>" style="width:100px;"placeholder="10" readonly>
-                        <input type="text" id="soluonghomqua" name="soluonghomqua" style="width:100px;" value="<?= $kq2['soluong'] ?? 0 ?>" style="width:100px;" placeholder="20" readonly>
-                        <input type="text" id="chenhlenh" name="chenhlenh" style="width:100px;" value="<?= ($kq1['soluong'] ?? 0) - ($kq2['soluong'] ?? 0) ?>" placeholder=" Chênh lệch" readonly>
-                    </div>
-                    <div class="form-field">
-                        <label for="nhaptaikho">Xuất tại kho</label>
-                        <input type="text" id="nhaptaikho" name="nhaptaikho" placeholder="" readonly>
-                    </div>
-                    <div class="form-field">
-                        <label for="tongiatri">Tổng giá trị</label>
-                        <input type="text" id="giatrihomnay" name="giatrihomnay" style="width:100px;" value="<?= number_format($kq1['giatri'] ?? 0) ?>" placeholder="10" readonly>
-                        <input type="text" id="giatrihomqua" name="giatrihomqua" style="width:100px;" value="<?= number_format($kq2['giatri'] ?? 0) ?>" placeholder="20"readonly>
-                        <input type="text" id="giatrichenhlenh" name="giatrichenhlenh" style="width:100px;" value="<?= number_format(($kq1['giatri'] ?? 0) - ($kq2['giatri'] ?? 0)) ?>"  placeholder=" Chênh lệch" readonly>
-                    </div>
-                </div>
-            </div>
-                <div class="action-buttons">
-                    
-                    <button type="submit" name="thongke_item" class="btn edit"> Thống kê</button>
-                    <button type="submit" name="clear_item" class="btn clear">Hủy bỏ</button>
-                    
-                </div>
-            </form>
-            <div class="data-table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>STT</th>
-                            <th>Mã phiếu xuất</th>
-                            <th>Đơn vị</th>
-                            <th>Bộ phận</th>
-                            <th>Người nhận hàng</th>
-                            <th>Địa chỉ</th>
-                            <th>Thời gian</th>
-                            <th>Địa điểm</th>
-                            <th>Xuất tại kho</th>
-                            <th>Lý do xuất</th>
-                        </tr>
-                    </thead>
-
-                   <tbody>
-                        <?php
-                        $data = getPhieuXuat();
-                        $stt = 1;
-                        foreach ($data as $row) {
-                            echo "<tr class='row-select'
-                                data-maphieuxuat='".$row['MaPhieuXuat']."'
-                                data-donvi='".$row['DonVi']."'
-                                data-bophan='".$row['BoPhan']."'
-                                data-diadiem='".$row['DiaDiem']."'
-                                data-diachi='".$row['DiaChi']."'
-                                data-nguoinhanhang='".$row['NguoiNhanHang']."'
-                                data-thoigian='".$row['ThoiGian']."'
-                                data-xuattaikho='".$row['XuatTaiKho']."'
-                                data-lydoxuat='".$row['LyDo']."'
-                            >";
-                            echo "<td>" . $stt++ . "</td>";
-                            echo "<td>" . $row['MaPhieuXuat'] . "</td>";
-                            echo "<td>" . $row['DonVi'] . "</td>";
-                            echo "<td>" . $row['BoPhan'] . "</td>";
-                            echo "<td>" . $row['NguoiNhanHang'] . "</td>";
-                            echo "<td>" . $row['DiaChi'] . "</td>";
-                            echo "<td>" . $row['ThoiGian'] . "</td>";
-                            echo "<td>" . $row['DiaDiem'] . "</td>";
-                            echo "<td>" . $row['XuatTaiKho'] . "</td>";
-                            echo "<td>" . $row['LyDo'] . "</td>";
-                            echo "</tr>";
-                        }
-                        ?>
-                        </tbody>
-                        <script>
-                        document.querySelectorAll(".row-select").forEach(row => {
-                            row.addEventListener("click", function () {
-
-                                document.getElementById("maphieuxuat").value = this.dataset.maphieuxuat;
-                                document.getElementById("nguoinhanhang").value = this.dataset.nguoinhanhang;
-                                document.getElementById("donvi").value = this.dataset.donvi;
-                                document.getElementById("diachi").value = this.dataset.diachi;
-                                document.getElementById("bophan").value = this.dataset.bophan;
-                                document.getElementById("thoigian").value = this.dataset.thoigian;
-                                document.getElementById("diadiem").value = this.dataset.diadiem;
-                                document.getElementById("xuattaikho").value = this.dataset.xuattaikho;
-                                document.getElementById("lydoxuat").value = this.dataset.lydoxuat;
-
-                                // Hiệu ứng chọn dòng
-                                document.querySelectorAll(".row-select").forEach(r => r.classList.remove("active-row"));
-                                this.classList.add("active-row");
-                            });
-                        });
-                        </script>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    
 </div>
