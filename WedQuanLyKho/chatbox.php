@@ -2,16 +2,9 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-require_once 'KetNoi/connect.php';
-
-try {
-    $conn = connectdb();
-} catch (Throwable $e) {
-    echo json_encode([
-        'reply' => '❌ Lỗi kết nối CSDL'
-    ]);
-    exit;
-}
+// 1. Cấu hình địa chỉ Server Python (app.py)
+// Thay địa chỉ này bằng link Render hoặc Local của bạn
+$PYTHON_API_URL = "https://lora-ai-9ti1.onrender.com/api/chat";
 
 $data = json_decode(file_get_contents("php://input"), true);
 $message = trim($data['message'] ?? '');
@@ -21,68 +14,46 @@ if ($message === '') {
     exit;
 }
 
-function detectIntent($text){
-    $text = mb_strtolower($text, 'UTF-8');
-    if (mb_strpos($text, 'xin chào')!== false || mb_strpos($text, 'hello')!== false|| mb_strpos($text, 'hi')!== false)
-        return 'XIN_CHAO';
-    if (mb_strpos($text, 'mệt')!== false)
-        return 'MET_QUA';
+try {
+    // 2. Sử dụng CURL để gửi yêu cầu sang app.py
+    $ch = curl_init($PYTHON_API_URL);
     
-    if (mb_strpos($text, 'ngày hôm nay')!== false || mb_strpos($text, 'hôm nay')!== false)
-        return 'NGAY_HOM_NAY';
-    if (
-        mb_strpos($text, 'mấy giờ') !== false || 
-        mb_strpos($text, 'giờ hiện tại') !== false ||
-        mb_strpos($text, 'bây giờ') !== false ||
-        mb_strpos($text, 'giờ') !== false
-    ) {
-        return 'GIO_HIEN_TAI';
+    // Cấu hình dữ liệu gửi đi dạng JSON
+    $payload = json_encode(array("text" => $message));
+    
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Chờ tối đa 10s
+
+    // 3. Thực thi và nhận phản hồi từ Python
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    if(curl_errno($ch)){
+        throw new Exception(curl_error($ch));
+    }
+    curl_close($ch);
+
+    // 4. Xử lý kết quả trả về
+    if ($httpCode === 200) {
+        $result = json_decode($response, true);
+        
+        // Trả về nội dung mà AI đã xử lý (đã lấy từ field 'response' trong app.py)
+        echo json_encode([
+            'reply' => $result['response'] ?? '🤖 AI không phản hồi nội dung.',
+            'intent' => $result['intent'] ?? 'unknown',
+            'confidence' => $result['confidence'] ?? 0
+        ]);
+    } else {
+        echo json_encode([
+            'reply' => '❌ Server AI đang bận (Mã lỗi: ' . $httpCode . ')'
+        ]);
     }
 
-    if (mb_strpos($text, 'tồn') !== false) return 'TON_KHO';
-    if (mb_strpos($text, 'phiếu nhập') !== false) return 'PHIEU_NHAP';
-    if (mb_strpos($text, 'phiếu xuất') !== false) return 'PHIEU_XUAT';
-    if (mb_strpos($text, 'hết') !== false) return 'CANH_BAO';
-
-    return 'UNKNOWN';
+} catch (Exception $e) {
+    // Trường hợp app.py chưa bật hoặc lỗi kết nối
+    echo json_encode([
+        'reply' => '🔌 Không thể kết nối với bộ não AI. Vui lòng kiểm tra lại Server Python!'
+    ]);
 }
-date_default_timezone_set('Asia/Ho_Chi_Minh');
-$intent = detectIntent($message);
-$reply = '';
-
-switch ($intent) {
-    case 'XIN_CHAO':
-        $reply = 'Tôi có thể giúp gì cho bạn...!';
-        break;
-    case 'MET_QUA':
-        $reply = 'Kệ m...!';
-        break;   
-    case 'TON_KHO':
-        $reply = '📦 Tôi đang kiểm tra tồn kho cho bạn...';
-        break;
-
-    case 'PHIEU_NHAP':
-        $reply = '🧾 Bạn muốn xem phiếu nhập theo ngày hay theo nhà cung cấp?';
-        break;
-
-    case 'PHIEU_XUAT':
-        $reply = '📤 Bạn muốn xem phiếu xuất hôm nay hay toàn bộ?';
-        break;
-
-    case 'CANH_BAO':
-        $reply = '⚠️ Tôi sẽ kiểm tra các mặt hàng sắp hết.';
-        break;
-
-    case 'NGAY_HOM_NAY':
-        $reply = '📅 Hôm nay là ngày ' . date('d/m/Y');
-        break;
-
-    case 'GIO_HIEN_TAI':
-        $reply = '⏰ Bây giờ là ' . date('H:i:s');
-        break;
-        
-    default:
-        $reply = '🤖 Tôi chưa hiểu rõ. Bạn có thể hỏi về tồn kho, phiếu nhập, phiếu xuất.';
-}
-
-echo json_encode(['reply' => $reply]);
