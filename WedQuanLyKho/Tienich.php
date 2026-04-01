@@ -6,96 +6,51 @@
 ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-/* ================= AI FLOAT ================= */
-#ai-float{
-    position: fixed;
-    bottom: 40px;
-    right: 40px;
-    width: 70px;
-    height: 70px;
-    background: linear-gradient(135deg, #0a8f3c, #0fc15c);
-    border-radius: 50%;
-    box-shadow: 0 8px 20px rgba(0,0,0,.3);
-    cursor: grab;
-    z-index: 99999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#ai-float i{
-    font-size: 34px;
-    color: white;
-}
-/* ================= AI CHAT BOX ================= */
-#ai-chat-box{
-    position: fixed;
-    bottom: 120px;
-    right: 40px;
-    width: 330px;
-    height: 420px;
-    background: #fff;
-    border-radius: 15px;
-    box-shadow: 0 15px 40px rgba(0,0,0,.35);
-    display: none;
-    flex-direction: column;
-    z-index: 99999;
-}
-.ai-header{
-    background: #0a8f3c;
-    color: white;
-    padding: 12px;
-    font-weight: bold;
-    border-radius: 15px 15px 0 0;
-    display: flex;
-    justify-content: space-between;
-}
-.ai-body{
+.ai-body {
     flex: 1;
     padding: 10px;
     overflow-y: auto;
     background: #fff;
-}
-.ai-msg{
-    padding: 8px 10px;
-    margin-bottom: 8px;
-    border-radius: 10px;
-    font-size: 14px;
-}
-.ai-msg.ai{ background: #e2ffe9; }
-.ai-msg.user{ background: #d9e8ff; text-align: right; }
-
-.ai-input {
+    /* Thêm các dòng dưới đây */
     display: flex;
-    padding: 8px;
-    gap: 6px;
-    border-top: 1px solid #ddd; 
-    background: #fff;
-    border-radius: 0 0 15px 15px; 
-    
+    flex-direction: column;
+    scroll-behavior: smooth; /* Giúp hiệu ứng cuộn mượt mà hơn khi gửi tin */
 }
-
-.ai-input input {
-    flex: 1;
-    padding: 8px 12px;     
-    border-radius: 20px;      
-    border: 1px solid #ccc;
-    outline: none;
+.ai-msg {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 12px;
     font-size: 14px;
+    /* Chống tràn khung */
+    word-wrap: break-word;
+    max-width: 85%; 
+    line-height: 1.4;
 }
 
-.ai-input button {
-    background: #0a8f3c;
-    color: white;
-    border: none;
-    padding: 8px 14px;       
-    border-radius: 20px;      
-    cursor: pointer;
-    font-weight: bold;
-    transition: background 0.3s;
+.ai-msg.user {
+    background: #d9e8ff;
+    align-self: flex-end; /* Đẩy bong bóng chat sang phải */
+    border-bottom-right-radius: 2px; /* Bo góc kiểu Messenger */
 }
 
-.ai-input button:hover {
-    background: #087233;      
+.ai-msg.ai {
+    background: #e2ffe9;
+    align-self: flex-start; /* Đẩy bong bóng chat sang trái */
+    border-bottom-left-radius: 2px;
+}
+/* Tùy chỉnh thanh cuộn cho Chrome, Safari, Edge */
+.ai-body::-webkit-scrollbar {
+    width: 6px;
+}
+.ai-body::-webkit-scrollbar-thumb {
+    background-color: #ddd;
+    border-radius: 10px;
+}
+.ai-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+.ai-input button:active {
+    transform: scale(0.95);
 }
 /* ================= MESSENGER FLOAT ================= */
 #messenger-float{
