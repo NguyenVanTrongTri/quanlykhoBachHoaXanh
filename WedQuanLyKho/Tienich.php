@@ -6,64 +6,96 @@
 ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
-/* ================= PHẦN BỔ SUNG HOÀN THIỆN (KHÔNG XÓA CODE CŨ) ================= */
-
-/* 1. Cấu hình để ai-body hỗ trợ cuộn và sắp xếp tin nhắn chuẩn */
-.ai-body {
+/* ================= AI FLOAT ================= */
+#ai-float{
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #0a8f3c, #0fc15c);
+    border-radius: 50%;
+    box-shadow: 0 8px 20px rgba(0,0,0,.3);
+    cursor: grab;
+    z-index: 99999;
     display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#ai-float i{
+    font-size: 34px;
+    color: white;
+}
+/* ================= AI CHAT BOX ================= */
+#ai-chat-box{
+    position: fixed;
+    bottom: 120px;
+    right: 40px;
+    width: 330px;
+    height: 420px;
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 15px 40px rgba(0,0,0,.35);
+    display: none;
     flex-direction: column;
-    scroll-behavior: smooth; /* Cuộn mượt khi gửi tin */
-    gap: 4px; /* Khoảng cách giữa các tin nhắn */
+    z-index: 99999;
 }
-
-/* 2. Tùy chỉnh thanh cuộn mảnh cho hiện đại (Chrome, Safari, Edge) */
-.ai-body::-webkit-scrollbar {
-    width: 5px;
+.ai-header{
+    background: #0a8f3c;
+    color: white;
+    padding: 12px;
+    font-weight: bold;
+    border-radius: 15px 15px 0 0;
+    display: flex;
+    justify-content: space-between;
 }
-.ai-body::-webkit-scrollbar-thumb {
-    background: #ccc;
+.ai-body{
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    background: #fff;
+}
+.ai-msg{
+    padding: 8px 10px;
+    margin-bottom: 8px;
     border-radius: 10px;
+    font-size: 14px;
+}
+.ai-msg.ai{ background: #e2ffe9; }
+.ai-msg.user{ background: #d9e8ff; text-align: right; }
+
+.ai-input {
+    display: flex;
+    padding: 8px;
+    gap: 6px;
+    border-top: 1px solid #ddd; 
+    background: #fff;
+    border-radius: 0 0 15px 15px; 
+    
 }
 
-/* 3. Nâng cấp bong bóng chat: Chống tràn chữ và định vị */
-.ai-msg {
-    max-width: 85%; /* Không để tin nhắn chiếm hết 100% chiều ngang */
-    word-wrap: break-word; /* Tự xuống dòng nếu gặp từ hoặc link quá dài */
-    line-height: 1.4;
+.ai-input input {
+    flex: 1;
+    padding: 8px 12px;     
+    border-radius: 20px;      
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 14px;
 }
 
-/* Căn tin nhắn AI sang trái */
-.ai-msg.ai {
-    align-self: flex-start;
-    border-bottom-left-radius: 2px;
-}
-
-/* Căn tin nhắn User sang phải (Dùng align-self chuẩn hơn text-align) */
-.ai-msg.user {
-    align-self: flex-end;
-    text-align: left; /* Chữ bên trong vẫn căn trái cho dễ đọc */
-    border-bottom-right-radius: 2px;
-}
-
-/* 4. Hiệu ứng cho nút đóng và nút gửi */
-#ai-close {
+.ai-input button {
+    background: #0a8f3c;
+    color: white;
+    border: none;
+    padding: 8px 14px;       
+    border-radius: 20px;      
     cursor: pointer;
-    padding: 0 5px;
-    transition: opacity 0.2s;
-}
-#ai-close:hover {
-    opacity: 0.7;
+    font-weight: bold;
+    transition: background 0.3s;
 }
 
-.ai-input button:active {
-    transform: scale(0.95); /* Hiệu ứng nhấn nút */
-}
-
-/* 5. Trạng thái Loading (nếu ông có dùng thẻ id="ai-loading") */
-#ai-loading {
-    font-style: italic;
-    color: #888;
-    background: transparent !important;
+.ai-input button:hover {
+    background: #087233;      
 }
 /* ================= MESSENGER FLOAT ================= */
 #messenger-float{
