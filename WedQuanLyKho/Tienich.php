@@ -688,7 +688,6 @@ function stopAutoRefresh(){
     clearInterval(intervalId);
     intervalId = null;
 }
-
 // Lắng nghe trạng thái tab
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
