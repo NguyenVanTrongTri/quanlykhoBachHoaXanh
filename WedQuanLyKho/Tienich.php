@@ -417,55 +417,59 @@
         messengerBox.classList.remove('shift-left');
     });
     window.sendAI = function () {
-        const aiInput = document.getElementById('ai-text');
-        const msg = aiInput.value.trim();
-        const box = document.getElementById('ai-messages');
+    const aiInput = document.getElementById('ai-text');
+    const msg = aiInput.value.trim();
+    const box = document.getElementById('ai-messages');
 
-        if (!msg) return;
+    if (!msg) return;
 
-        // 1. Thêm tin nhắn của User
-        const userMsg = document.createElement('div');
-        userMsg.className = 'ai-msg user';
-        userMsg.textContent = msg;
-        box.appendChild(userMsg);
-        
-        // LỆNH QUAN TRỌNG: Cuộn xuống ngay sau khi User gửi
+    // 1. Hiển thị tin nhắn User
+    const userMsg = document.createElement('div');
+    userMsg.className = 'ai-msg user';
+    userMsg.textContent = msg;
+    box.appendChild(userMsg);
+    
+    // Cuộn xuống ngay để thấy tin mình vừa gửi
+    box.scrollTop = box.scrollHeight;
+
+    aiInput.value = '';
+
+    // 2. Hiển thị Loading
+    const loadingMsg = document.createElement('div');
+    loadingMsg.className = 'ai-msg ai';
+    loadingMsg.id = 'ai-loading';
+    loadingMsg.textContent = '🤖 Lora đang suy nghĩ...';
+    box.appendChild(loadingMsg);
+    
+    // Cuộn tiếp để thấy dòng Loading
+    box.scrollTop = box.scrollHeight;
+
+    // 3. Gọi API
+    fetch("https://lora-ai-9ti1.onrender.com/api/chat", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: msg })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const loading = document.getElementById('ai-loading');
+        if (loading) loading.remove();
+
+        const aiMsg = document.createElement('div');
+        aiMsg.className = 'ai-msg ai';
+        aiMsg.textContent = data.response;
+        box.appendChild(aiMsg);
+
+        // QUAN TRỌNG: Phải cuộn ở đây sau khi tin nhắn AI đã vào DOM
+        setTimeout(() => {
+            box.scrollTop = box.scrollHeight;
+        }, 50); // Delay 50ms để trình duyệt kịp render chiều cao mới
+    })
+    .catch(err => {
+        const loading = document.getElementById('ai-loading');
+        if (loading) loading.textContent = '❌ Lora chưa dậy kịp, Trọng thử lại nhé!';
         box.scrollTop = box.scrollHeight;
-
-        aiInput.value = '';
-
-        // 2. Hiển thị Loading
-        const loadingMsg = document.createElement('div');
-        loadingMsg.className = 'ai-msg ai';
-        loadingMsg.id = 'ai-loading';
-        loadingMsg.textContent = '🤖 Lora đang suy nghĩ...';
-        box.appendChild(loadingMsg);
-        box.scrollTop = box.scrollHeight; // Cuộn tiếp để thấy dòng Loading
-
-        // 3. Gọi API
-        fetch("https://lora-ai-9ti1.onrender.com/api/chat", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: msg })
-        })
-        .then(res => res.json())
-        .then(data => {
-            const loading = document.getElementById('ai-loading');
-            if (loading) loading.remove();
-
-            const aiMsg = document.createElement('div');
-            aiMsg.className = 'ai-msg ai';
-            aiMsg.textContent = data.response;
-            box.appendChild(aiMsg);
-
-            // LỆNH QUAN TRỌNG NHẤT: Cuộn xuống sau khi AI trả lời xong
-            box.scrollTop = box.scrollHeight;
-        })
-        .catch(err => {
-            const loading = document.getElementById('ai-loading');
-            if (loading) loading.textContent = '❌ Lỗi kết nối rồi Trọng ơi!';
-            box.scrollTop = box.scrollHeight;
-        });
+    });
 };
     aiInput.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
