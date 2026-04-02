@@ -85,6 +85,7 @@ function getLichSuChiTietTungHang() {
 
 // Chuyển dữ liệu này sang JS
 $lichSuChiTiet = getLichSuChiTietTungHang();
+
 ?>
 <?php define('ALLOW_RENDER', true);
 include_once('../ThongTinTaiKhoan.php');
@@ -478,6 +479,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             style="background: #e60000; color: white; padding: 10px 25px; border-radius: 6px; min-width: 200px;">
                             🚀 Bắt đầu dự báo
                         </button>
+                        <div class="form-group" style="margin-top: 10px;">
+                        <label>Loại hiển thị:</label>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-primary active" onclick="changeChartType('line', this)">📈 Biểu đồ đường</button>
+                            <button type="button" class="btn btn-outline-primary" onclick="changeChartType('bar', this)">📊 Biểu đồ cột</button>
+                        </div>
+                    </div>
                     </div>
                 </div>
 
@@ -529,7 +537,23 @@ const TODAY_STR = "2026-04-02";
 window.onload = function() {
     renderTongQuat();
 };
+let currentChartType = 'line'; // Mặc định là đường
+let lastLabels = []; // Lưu lại để vẽ lại khi đổi type
+let lastValues = [];
+let lastTitle = "";
 
+function changeChartType(type, btn) {
+    currentChartType = type;
+    
+    // Đổi style cho nút
+    document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    // Vẽ lại biểu đồ ngay lập tức với dữ liệu cuối cùng
+    if (lastLabels.length > 0) {
+        updateProChart(lastLabels, lastValues, lastTitle);
+    }
+}
 // 2. SỰ KIỆN BẤM NÚT DỰ BÁO (NÂNG CẤP)
 document.getElementById('btnForecast').addEventListener('click', function() {
     const days = document.getElementById('forecastDays').value; // Lấy giá trị từ Select
@@ -618,14 +642,23 @@ function drawChartForItem(maHang, tenHang, qtyDuBao) {
 
 // 5. Hàm vẽ Core (Giữ nguyên logic hôm trước)
 function updateProChart(labels, values, titleText) {
+    // Lưu lại dữ liệu để dùng khi đổi loại biểu đồ
+    lastLabels = labels;
+    lastValues = values;
+    lastTitle = titleText;
+
     const ctx = document.getElementById('forecastChart').getContext('2d');
     if (window.myForecastChart) { window.myForecastChart.destroy(); }
 
     let todayIndex = labels.indexOf(TODAY_STR);
     if (todayIndex === -1) todayIndex = labels.length - 2;
 
+    // Cấu hình màu sắc cho biểu đồ cột (Bar)
+    const backgroundColors = labels.map((_, idx) => idx > todayIndex ? 'rgba(230, 0, 0, 0.6)' : 'rgba(0, 146, 63, 0.6)');
+    const borderColors = labels.map((_, idx) => idx > todayIndex ? '#e60000' : '#00923F');
+
     window.myForecastChart = new Chart(ctx, {
-        type: 'line',
+        type: currentChartType, 
         data: {
             labels: labels,
             datasets: [{
@@ -635,10 +668,13 @@ function updateProChart(labels, values, titleText) {
                 fill: true,
                 pointRadius: (ctx) => (ctx.dataIndex === labels.length - 1 ? 10 : 4),
                 pointBackgroundColor: (ctx) => (ctx.dataIndex === labels.length - 1 ? '#e60000' : '#00923F'),
-                segment: {
+                segment: currentChartType === 'line' ? {
                     borderColor: ctx => ctx.p1.idx > todayIndex ? '#e60000' : '#00923F',
-                    borderDash: ctx => ctx.p1.idx > todayIndex ? [5, 5] : [], 
-                }
+                    borderDash: ctx => ctx.p1.idx > todayIndex ? [5, 5] : [],
+                } : {},
+                backgroundColor: currentChartType === 'bar' ? backgroundColors : 'rgba(142, 202, 239, 0.7)',
+                borderColor: currentChartType === 'bar' ? borderColors : '#00923F',
+                borderWidth: 2
             }]
         },
         options: {
@@ -649,17 +685,31 @@ function updateProChart(labels, values, titleText) {
                         todayLine: {
                             type: 'line', xMin: todayIndex, xMax: todayIndex,
                             borderColor: '#FF5722', borderWidth: 2, borderDash: [6, 4],
-                            label: { display: true, content: 'HIỆN TẠI', position: 'end' }
+                            label: { display: true, content: 'HIỆN TẠI', position: 'end', backgroundColor: '#FF5722' }
                         }
                     }
                 }
             },
-            scales: { y: { beginAtZero: true } }
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    grid: {
+                        display: true,      // Luôn hiện kẻ ngang
+                        color: '#e0e0e0',
+                        lineWidth: 1
+                    }
+                },
+                x: { 
+                    grid: { 
+                        display: true,      // FIX: Đảm bảo luôn là TRUE để không mất ô kẻ dọc khi vẽ chi tiết
+                        color: '#e0e0e0',
+                        lineWidth: 1
+                    } 
+                }
+            }
         }
     });
 }
-
-// Hàm render bảng (Nhớ giữ lại hàm này của bạn)
 function renderDataTable(data) {
     const sortedItems = data.items.sort((a, b) => b.qty - a.qty);
     const tbody = document.getElementById('forecastTableBody');
