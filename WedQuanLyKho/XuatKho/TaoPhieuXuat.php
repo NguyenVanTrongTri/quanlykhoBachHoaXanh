@@ -999,7 +999,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <?php foreach ($dsLoaiKho as $kho): ?>
                                 <option 
                                     value="<?= $kho['MaLoaiKho'] ?>"
-                                    <?= (isset($phieu['XuatTaiKho']) && $phieu['XuatTaiKho'] == $kho['TenLoaiKho']) ? 'selected' : '' ?>>
+                                    <?= (isset($phieu['XuatTaiKho']) && $phieu['XuatTaiKho'] == $kho['MaLoaiKho']) ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($kho['TenLoaiKho']) ?>
                                 </option>
                             <?php endforeach; ?>
